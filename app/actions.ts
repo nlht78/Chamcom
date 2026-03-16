@@ -62,7 +62,7 @@ export async function saveMealRecord(data: MealFormData): Promise<SaveResult> {
       breakfast: booleanToBinary(data.breakfast),
       lunch: booleanToBinary(data.lunch),
       dinner: booleanToBinary(data.dinner),
-      multiplier,
+      multiplier: multiplier as 1 | 2,
       total,
     };
 
@@ -113,9 +113,9 @@ export async function saveMealRecords(dataList: MealFormData[]): Promise<SaveRes
         breakfast: booleanToBinary(data.breakfast),
         lunch: booleanToBinary(data.lunch),
         dinner: booleanToBinary(data.dinner),
-        multiplier,
+        multiplier: multiplier as 1 | 2,
         total,
-      } as import('@/services/GoogleSheetsService').MealRecord;
+      };
     });
 
     const result = await sheetsService.appendMealRecords(records);
