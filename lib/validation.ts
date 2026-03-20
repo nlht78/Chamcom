@@ -78,6 +78,47 @@ export interface ValidationResult {
 }
 
 /**
+ * Kiểm tra khoảng ngày
+ *
+ * @param startDate - Ngày bắt đầu (YYYY-MM-DD)
+ * @param endDate - Ngày kết thúc (YYYY-MM-DD)
+ * @returns ValidationResult với các key lỗi: startDate, endDate, dateRange
+ *
+ * Validates: Requirements 2.5, 2.6, 2.7
+ */
+export function validateDateRange(startDate: string, endDate: string): ValidationResult {
+  const errors: Record<string, string> = {};
+
+  if (!validateDate(startDate)) {
+    errors.startDate = 'Vui lòng chọn ngày hợp lệ';
+  }
+
+  if (!validateDate(endDate)) {
+    errors.endDate = 'Vui lòng chọn ngày hợp lệ';
+  }
+
+  // Chỉ kiểm tra quan hệ và khoảng khi cả hai ngày đều hợp lệ
+  if (!errors.startDate && !errors.endDate) {
+    if (endDate < startDate) {
+      errors.dateRange = 'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu';
+    } else {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffMs = end.getTime() - start.getTime();
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1; // bao gồm cả hai đầu mút
+      if (diffDays > 31) {
+        errors.dateRange = 'Khoảng ngày tối đa là 31 ngày';
+      }
+    }
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+}
+
+/**
  * Kiểm tra tất cả các trường trong form
  * 
  * @param formData - Dữ liệu form cần kiểm tra

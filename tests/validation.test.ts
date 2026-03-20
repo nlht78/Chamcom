@@ -1,8 +1,10 @@
+import * as fc from 'fast-check';
 import { 
   validateEmployeeName, 
   validateDate, 
   validatePrice, 
   validateForm,
+  validateDateRange,
   FormData 
 } from '../lib/validation';
 
@@ -211,5 +213,206 @@ describe('validateForm', () => {
     const result = validateForm(formData);
     expect(result.isValid).toBe(true);
     expect(Object.keys(result.errors).length).toBe(0);
+  });
+});
+
+// ─── validateDateRange unit tests ────────────────────────────────────────────
+
+describe('validateDateRange', () => {
+  it('should return valid for equal start and end date', () => {
+    const result = validateDateRange('2024-01-15', '2024-01-15');
+    expect(result.isValid).toBe(true);
+    expect(result.errors).toEqual({});
+  });
+
+  it('should return valid for a range within 31 days', () => {
+    const result = validateDateRange('2024-01-01', '2024-01-31');
+    expect(result.isValid).toBe(true);
+    expect(result.errors).toEqual({});
+  });
+
+  it('should return error when endDate < startDate', () => {
+    const result = validateDateRange('2024-01-10', '2024-01-05');
+    expect(result.isValid).toBe(false);
+    expect(result.errors.dateRange).toBe('Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu');
+  });
+
+  it('should return error when range exceeds 31 days', () => {
+    const result = validateDateRange('2024-01-01', '2024-02-01'); // 32 days
+    expect(result.isValid).toBe(false);
+    expect(result.errors.dateRange).toBe('Khoảng ngày tối đa là 31 ngày');
+  });
+
+  it('should return startDate error for invalid startDate', () => {
+    const result = validateDateRange('not-a-date', '2024-01-10');
+    expect(result.isValid).toBe(false);
+    expect(result.errors.startDate).toBe('Vui lòng chọn ngày hợp lệ');
+  });
+
+  it('should return endDate error for invalid endDate', () => {
+    const result = validateDateRange('2024-01-01', '2024-13-01');
+    expect(result.isValid).toBe(false);
+    expect(result.errors.endDate).toBe('Vui lòng chọn ngày hợp lệ');
+  });
+
+  it('should return both date errors when both are invalid', () => {
+    const result = validateDateRange('', '');
+    expect(result.isValid).toBe(false);
+    expect(result.errors.startDate).toBe('Vui lòng chọn ngày hợp lệ');
+    expect(result.errors.endDate).toBe('Vui lòng chọn ngày hợp lệ');
+  });
+
+  it('should accept exactly 31-day range', () => {
+    // 2024-01-01 to 2024-01-31 = 31 days
+    const result = validateDateRange('2024-01-01', '2024-01-31');
+    expect(result.isValid).toBe(true);
+  });
+});
+
+// ─── Property-based tests ─────────────────────────────────────────────────────
+
+// Feature: cham-com-theo-khoang-ngay, Property 6: Validation ngăn lưu khi dữ liệu không hợp lệ
+
+describe('validateDateRange — Property 6: Validation ngăn lưu khi dữ liệu không hợp lệ', () => {
+  /**
+   * Helper: tạo chuỗi ngày YYYY-MM-DD từ Date
+   */
+  function toDateStr(d: Date): string {
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  /**
+   * Arbitrary sinh ngày hợp lệ trong khoảng 2000-01-01 đến 2099-12-31
+   */
+  const validDateArb = fc.date({
+    min: new Date('2000-01-01'),
+    max: new Date('2099-12-31'),
+  }).map(toDateStr);
+
+  /**
+   * Validates: Requirements 2.5
+   * endDate < startDate → isValid: false, errors.dateRange tồn tại
+   */
+  it('P6a: endDate < startDate luôn trả về isValid: false với lỗi dateRange', () => {
+    fc.assert(
+      fc.property(
+        validDateArb,
+        fc.integer({ min: 1, max: 30 }),
+        (startStr, offsetDays) => {
+          const start = new Date(startStr);
+          const end = new Date(start);
+          end.setUTCDate(end.getUTCDate() - offsetDays);
+          const endStr = toDateStr(end);
+
+          const result = validateDateRange(startStr, endStr);
+          expect(result.isValid).toBe(false);
+          expect(result.errors.dateRange).toBeDefined();
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  /**
+   * Validates: Requirements 2.6
+   * Khoảng > 31 ngày → isValid: false, errors.dateRange tồn tại
+   */
+  it('P6b: khoảng > 31 ngày luôn trả về isValid: false với lỗi dateRange', () => {
+    fc.assert(
+      fc.property(
+        validDateArb,
+        fc.integer({ min: 32, max: 365 }),
+        (startStr, offsetDays) => {
+          const start = new Date(startStr);
+          const end = new Date(start);
+          end.setUTCDate(end.getUTCDate() + offsetDays - 1); // +offsetDays-1 → range = offsetDays ngày
+          const endStr = toDateStr(end);
+
+          const result = validateDateRange(startStr, endStr);
+          expect(result.isValid).toBe(false);
+          expect(result.errors.dateRange).toBeDefined();
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  /**
+   * Validates: Requirements 2.7
+   * Chuỗi ngày không hợp lệ → isValid: false, errors.startDate hoặc errors.endDate tồn tại
+   */
+  it('P6c: startDate không hợp lệ luôn trả về isValid: false với lỗi startDate', () => {
+    const invalidDateArb = fc.oneof(
+      fc.constant(''),
+      fc.constant('not-a-date'),
+      fc.constant('2024-13-01'),
+      fc.constant('2024-00-15'),
+      fc.constant('2024-02-30'),
+      fc.string({ minLength: 1, maxLength: 20 }).filter(s => !/^\d{4}-\d{2}-\d{2}$/.test(s)),
+    );
+
+    fc.assert(
+      fc.property(
+        invalidDateArb,
+        validDateArb,
+        (invalidStart, validEnd) => {
+          const result = validateDateRange(invalidStart, validEnd);
+          expect(result.isValid).toBe(false);
+          expect(result.errors.startDate).toBeDefined();
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  it('P6d: endDate không hợp lệ luôn trả về isValid: false với lỗi endDate', () => {
+    const invalidDateArb = fc.oneof(
+      fc.constant(''),
+      fc.constant('not-a-date'),
+      fc.constant('2024-13-01'),
+      fc.constant('2024-00-15'),
+      fc.constant('2024-02-30'),
+      fc.string({ minLength: 1, maxLength: 20 }).filter(s => !/^\d{4}-\d{2}-\d{2}$/.test(s)),
+    );
+
+    fc.assert(
+      fc.property(
+        validDateArb,
+        invalidDateArb,
+        (validStart, invalidEnd) => {
+          const result = validateDateRange(validStart, invalidEnd);
+          expect(result.isValid).toBe(false);
+          expect(result.errors.endDate).toBeDefined();
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  /**
+   * Validates: Requirements 2.5, 2.6, 2.7 (positive case)
+   * Khoảng hợp lệ (1–31 ngày, cả hai ngày hợp lệ) → isValid: true
+   */
+  it('P6e: khoảng hợp lệ (1–31 ngày) luôn trả về isValid: true', () => {
+    fc.assert(
+      fc.property(
+        validDateArb,
+        fc.integer({ min: 0, max: 30 }),
+        (startStr, offsetDays) => {
+          const start = new Date(startStr);
+          const end = new Date(start);
+          end.setUTCDate(end.getUTCDate() + offsetDays);
+          const endStr = toDateStr(end);
+
+          const result = validateDateRange(startStr, endStr);
+          expect(result.isValid).toBe(true);
+          expect(result.errors).toEqual({});
+        }
+      ),
+      { numRuns: 100 }
+    );
   });
 });
