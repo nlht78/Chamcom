@@ -30,6 +30,31 @@ export class GoogleSheetsService {
     return this.appendMealRecords([record]);
   }
 
+  async ensureEmployeeInSummary(employeeName: string): Promise<AppendResult> {
+    if (!this.scriptUrl) {
+      return { success: false, error: 'APPS_SCRIPT_URL chưa được cấu hình' };
+    }
+    try {
+      const params = new URLSearchParams();
+      params.set('data', JSON.stringify({ action: 'ensureEmployee', employeeName }));
+      const response = await fetch(this.scriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+        redirect: 'follow',
+      });
+      const text = await response.text();
+      try {
+        const json = JSON.parse(text);
+        return json.success ? { success: true } : { success: false, error: json.error };
+      } catch {
+        return response.ok ? { success: true } : { success: false, error: text.slice(0, 100) };
+      }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
   async appendMealRecords(records: MealRecord[]): Promise<AppendResult> {
     if (!this.scriptUrl) {
       return { success: false, error: 'APPS_SCRIPT_URL chưa được cấu hình' };

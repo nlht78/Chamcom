@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { calculateTotal } from '@/lib/calculations';
 import { formatCurrency, formatDateToYYYYMMDD } from '@/lib/formatting';
 import { validateDate, validateEmployeeName, validatePrice } from '@/lib/validation';
-import { saveMealRecord } from '@/app/actions';
+import { saveMealRecord, ensureEmployeeInSummary } from '@/app/actions';
 import TotalDisplay from './TotalDisplay';
 
 const today = formatDateToYYYYMMDD(new Date().toISOString());
@@ -67,6 +67,8 @@ export default function MealForm() {
         breakfastPrice: bp, lunchPrice: lp, dinnerPrice: dp, isHoliday,
       });
       if (result.success) {
+        // Nếu tên chưa có trong Tổng hợp tháng thì tự động thêm vào
+        await ensureEmployeeInSummary(employeeName);
         setMessage({ type: 'success', text: result.message });
         resetForm();
       } else {

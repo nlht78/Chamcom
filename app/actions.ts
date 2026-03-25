@@ -23,9 +23,21 @@ export interface SaveResult {
   error?: string;
 }
 
+export async function ensureEmployeeInSummary(employeeName: string): Promise<SaveResult> {
+  try {
+    const sheetsService = new GoogleSheetsService();
+    const result = await sheetsService.ensureEmployeeInSummary(employeeName);
+    return result.success
+      ? { success: true, message: 'OK' }
+      : { success: false, message: result.error || 'Lỗi khi thêm vào tổng hợp tháng' };
+  } catch (error) {
+    return { success: false, message: 'Lỗi khi thêm vào tổng hợp tháng', error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+
 export async function saveMealRecord(data: MealFormData): Promise<SaveResult> {
   try {
-    // Validate input data
     if (!data.date || !data.employeeName.trim()) {
       return {
         success: false,
