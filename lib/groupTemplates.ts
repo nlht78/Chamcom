@@ -29,6 +29,7 @@ export const GROUP_TEMPLATES: GroupTemplate[] = [
       'Đinh Kiều Anh Phụng',
       'Huỳnh Văn May',
       'Võ Đức Phát',
+      'Chú Trình',
     ],
   },
   {
