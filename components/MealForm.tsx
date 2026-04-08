@@ -6,6 +6,7 @@ import { formatCurrency, formatDateToYYYYMMDD } from '@/lib/formatting';
 import { validateDate, validateEmployeeName, validatePrice } from '@/lib/validation';
 import { saveMealRecord, ensureEmployeeInSummary } from '@/app/actions';
 import TotalDisplay from './TotalDisplay';
+import PriceEditor, { DEFAULT_PRICES } from './PriceEditor';
 
 const today = formatDateToYYYYMMDD(new Date().toISOString());
 
@@ -15,9 +16,9 @@ export default function MealForm() {
   const [breakfast, setBreakfast] = useState(false);
   const [lunch, setLunch] = useState(false);
   const [dinner, setDinner] = useState(false);
-  const [breakfastPrice, setBreakfastPrice] = useState('12000');
-  const [lunchPrice, setLunchPrice] = useState('30000');
-  const [dinnerPrice, setDinnerPrice] = useState('30000');
+  const [breakfastPrice, setBreakfastPrice] = useState(String(DEFAULT_PRICES.breakfastPrice));
+  const [lunchPrice, setLunchPrice] = useState(String(DEFAULT_PRICES.lunchPrice));
+  const [dinnerPrice, setDinnerPrice] = useState(String(DEFAULT_PRICES.dinnerPrice));
   const [isHoliday, setIsHoliday] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -35,9 +36,9 @@ export default function MealForm() {
     setBreakfast(false);
     setLunch(false);
     setDinner(false);
-    setBreakfastPrice('12000');
-    setLunchPrice('30000');
-    setDinnerPrice('30000');
+    setBreakfastPrice(String(DEFAULT_PRICES.breakfastPrice));
+    setLunchPrice(String(DEFAULT_PRICES.lunchPrice));
+    setDinnerPrice(String(DEFAULT_PRICES.dinnerPrice));
     setIsHoliday(false);
     setErrors({});
   };
@@ -106,25 +107,28 @@ export default function MealForm() {
         <p className="text-sm font-medium text-gray-700">Chọn bữa ăn</p>
 
         {([
-          { id: 'breakfast', label: 'Sáng', checked: breakfast, setChecked: setBreakfast, priceVal: breakfastPrice, setPrice: setBreakfastPrice, errKey: 'breakfastPrice' },
-          { id: 'lunch',     label: 'Trưa', checked: lunch,     setChecked: setLunch,     priceVal: lunchPrice,     setPrice: setLunchPrice,     errKey: 'lunchPrice' },
-          { id: 'dinner',    label: 'Chiều',checked: dinner,    setChecked: setDinner,    priceVal: dinnerPrice,    setPrice: setDinnerPrice,    errKey: 'dinnerPrice' },
-        ] as const).map(({ id, label, checked, setChecked, priceVal, setPrice, errKey }) => (
-          <div key={id} className="bg-gray-50 p-3 rounded-md space-y-2">
+          { id: 'breakfast', label: 'Sáng', checked: breakfast, setChecked: setBreakfast },
+          { id: 'lunch',     label: 'Trưa', checked: lunch,     setChecked: setLunch },
+          { id: 'dinner',    label: 'Chiều',checked: dinner,    setChecked: setDinner },
+        ] as const).map(({ id, label, checked, setChecked }) => (
+          <div key={id} className="bg-gray-50 p-3 rounded-md">
             <div className="flex items-center gap-3">
               <input type="checkbox" id={id} checked={checked} onChange={e => setChecked(e.target.checked)}
                 className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
               <label htmlFor={id} className="text-sm font-medium text-gray-700">{label}</label>
             </div>
-            <div className="flex items-center gap-2">
-              <input type="number" value={priceVal} onChange={e => setPrice(e.target.value)}
-                placeholder="Nhập giá" min="0" step="1000"
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <span className="text-xs text-gray-500 min-w-[80px]">{formatCurrency(Number(priceVal) || 0)}</span>
-            </div>
-            {errors[errKey] && <p className="text-red-500 text-xs">{errors[errKey]}</p>}
           </div>
         ))}
+
+        <PriceEditor
+          prices={{ breakfastPrice: bp, lunchPrice: lp, dinnerPrice: dp }}
+          onChange={p => {
+            setBreakfastPrice(String(p.breakfastPrice));
+            setLunchPrice(String(p.lunchPrice));
+            setDinnerPrice(String(p.dinnerPrice));
+          }}
+          errors={errors}
+        />
       </div>
 
       {/* Holiday */}

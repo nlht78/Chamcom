@@ -7,6 +7,7 @@ import { saveMealRecord, saveMealRecords } from '@/app/actions';
 import GroupSelector from './GroupSelector';
 import MemberTable from './MemberTable';
 import MealForm from './MealForm';
+import PriceEditor, { DEFAULT_PRICES } from './PriceEditor';
 
 interface BatchSettings {
   date: string;
@@ -24,9 +25,9 @@ interface MemberMeals {
 
 const DEFAULT_SETTINGS: BatchSettings = {
   date: new Date().toISOString().split('T')[0],
-  breakfastPrice: 12000,
-  lunchPrice: 30000,
-  dinnerPrice: 30000,
+  breakfastPrice: DEFAULT_PRICES.breakfastPrice,
+  lunchPrice: DEFAULT_PRICES.lunchPrice,
+  dinnerPrice: DEFAULT_PRICES.dinnerPrice,
   isHoliday: false,
 };
 
@@ -185,88 +186,15 @@ export default function BatchMealForm() {
             </div>
 
             {/* Prices */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label
-                  htmlFor="batch-breakfast-price"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Giá sáng (đ)
-                </label>
-                <input
-                  type="number"
-                  id="batch-breakfast-price"
-                  value={settings.breakfastPrice}
-                  min={1}
-                  onChange={(e) =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      breakfastPrice: Number(e.target.value),
-                    }))
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.breakfastPrice ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.breakfastPrice && (
-                  <p className="text-red-500 text-sm mt-1">{errors.breakfastPrice}</p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="batch-lunch-price"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Giá trưa (đ)
-                </label>
-                <input
-                  type="number"
-                  id="batch-lunch-price"
-                  value={settings.lunchPrice}
-                  min={1}
-                  onChange={(e) =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      lunchPrice: Number(e.target.value),
-                    }))
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.lunchPrice ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.lunchPrice && (
-                  <p className="text-red-500 text-sm mt-1">{errors.lunchPrice}</p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  htmlFor="batch-dinner-price"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Giá chiều (đ)
-                </label>
-                <input
-                  type="number"
-                  id="batch-dinner-price"
-                  value={settings.dinnerPrice}
-                  min={1}
-                  onChange={(e) =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      dinnerPrice: Number(e.target.value),
-                    }))
-                  }
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.dinnerPrice ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.dinnerPrice && (
-                  <p className="text-red-500 text-sm mt-1">{errors.dinnerPrice}</p>
-                )}
-              </div>
-            </div>
+            <PriceEditor
+              prices={{
+                breakfastPrice: settings.breakfastPrice,
+                lunchPrice: settings.lunchPrice,
+                dinnerPrice: settings.dinnerPrice,
+              }}
+              onChange={p => setSettings(prev => ({ ...prev, ...p }))}
+              errors={errors}
+            />
 
             {/* Holiday checkbox */}
             <div className="flex items-center gap-2 bg-yellow-50 p-3 rounded-md">

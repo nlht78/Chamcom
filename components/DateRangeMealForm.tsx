@@ -13,6 +13,8 @@ import UniformModePanel from './UniformModePanel';
 import NonUniformModePanel from './NonUniformModePanel';
 import RecordCountBadge from './RecordCountBadge';
 
+import { DEFAULT_PRICES } from './PriceEditor';
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface RangeSettingsState {
@@ -45,9 +47,9 @@ const today = new Date().toISOString().split('T')[0];
 const DEFAULT_RANGE_SETTINGS: RangeSettingsState = {
   startDate: today,
   endDate: today,
-  breakfastPrice: 12000,
-  lunchPrice: 30000,
-  dinnerPrice: 30000,
+  breakfastPrice: DEFAULT_PRICES.breakfastPrice,
+  lunchPrice: DEFAULT_PRICES.lunchPrice,
+  dinnerPrice: DEFAULT_PRICES.dinnerPrice,
 };
 
 function buildInitialUniformMeals(members: string[]): UniformMeals {
