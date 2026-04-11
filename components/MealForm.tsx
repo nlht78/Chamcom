@@ -20,6 +20,7 @@ export default function MealForm() {
   const [lunchPrice, setLunchPrice] = useState(String(DEFAULT_PRICES.lunchPrice));
   const [dinnerPrice, setDinnerPrice] = useState(String(DEFAULT_PRICES.dinnerPrice));
   const [isHoliday, setIsHoliday] = useState(false);
+  const [guestCount, setGuestCount] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -28,7 +29,7 @@ export default function MealForm() {
   const lp = Number(lunchPrice) || 0;
   const dp = Number(dinnerPrice) || 0;
 
-  const total = calculateTotal(breakfast, lunch, dinner, bp, lp, dp, isHoliday ? 2 : 1);
+  const total = calculateTotal(breakfast, lunch, dinner, bp, lp, dp, isHoliday ? 2 : 1) * guestCount;
 
   const resetForm = () => {
     setDate(today);
@@ -40,6 +41,7 @@ export default function MealForm() {
     setLunchPrice(String(DEFAULT_PRICES.lunchPrice));
     setDinnerPrice(String(DEFAULT_PRICES.dinnerPrice));
     setIsHoliday(false);
+    setGuestCount(1);
     setErrors({});
   };
 
@@ -53,6 +55,7 @@ export default function MealForm() {
     if (!validatePrice(bp)) newErrors.breakfastPrice = 'Giá sáng phải là số dương';
     if (!validatePrice(lp)) newErrors.lunchPrice = 'Giá trưa phải là số dương';
     if (!validatePrice(dp)) newErrors.dinnerPrice = 'Giá chiều phải là số dương';
+    if (!Number.isInteger(guestCount) || guestCount < 1) newErrors.guestCount = 'Số khách phải là số nguyên dương';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -65,7 +68,10 @@ export default function MealForm() {
     try {
       const result = await saveMealRecord({
         date, employeeName, breakfast, lunch, dinner,
-        breakfastPrice: bp, lunchPrice: lp, dinnerPrice: dp, isHoliday,
+        breakfastPrice: bp * guestCount,
+        lunchPrice: lp * guestCount,
+        dinnerPrice: dp * guestCount,
+        isHoliday,
       });
       if (result.success) {
         // Nếu tên chưa có trong Tổng hợp tháng thì tự động thêm vào
@@ -100,6 +106,28 @@ export default function MealForm() {
         <input type="text" id="employeeName" value={employeeName} onChange={e => setEmployeeName(e.target.value)}
           placeholder="Nhập tên nhân viên" className={inputCls(errors.employeeName)} />
         {errors.employeeName && <p className="text-red-500 text-sm mt-1">{errors.employeeName}</p>}
+      </div>
+
+      {/* Guest count */}
+      <div>
+        <label htmlFor="guestCount" className="block text-sm font-medium text-gray-700 mb-1">
+          Số lượng khách
+        </label>
+        <div className="flex items-center gap-3">
+          <input
+            type="number"
+            id="guestCount"
+            value={guestCount}
+            min={1}
+            step={1}
+            onChange={e => setGuestCount(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+            className={`w-24 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.guestCount ? 'border-red-500' : 'border-gray-300'}`}
+          />
+          {guestCount > 1 && (
+            <span className="text-sm text-blue-600 font-medium">× {guestCount} khách</span>
+          )}
+        </div>
+        {errors.guestCount && <p className="text-red-500 text-sm mt-1">{errors.guestCount}</p>}
       </div>
 
       {/* Meals + Prices */}
